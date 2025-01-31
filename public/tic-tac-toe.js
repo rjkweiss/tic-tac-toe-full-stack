@@ -60,6 +60,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(container);
 
     let currPlayer;
+    let computerPlayer;
     let gameBoardState;
 
     // track if game is over or not
@@ -78,13 +79,26 @@ window.addEventListener('DOMContentLoaded', () => {
             currPlayer = gameState.currentPlayer;
             gameBoardState = gameState.gameBoardState;
             gameOver = gameState.gameOver;
+            computerPlayer = gameState.computerPlayer;
 
         } else {
+
+            // randomly assign computer player
+            // Randomly assign X or O to the computer and player
+            const isComputerX = Math.random() < 0.5;
+
+            if (isComputerX) {
+                currPlayer = 'X';  // Computer is X
+                computerPlayer = 'X';
+            } else {
+                currPlayer = 'O';  // Computer is O
+                computerPlayer = 'O';
+            }
 
             // reset game state & player
             gameBoardState = [[null, null, null],[null, null, null],[null, null, null]];
 
-            currPlayer = 'X';
+            // currPlayer = 'X';
 
             // resets the game
             gameOver = false;
@@ -114,7 +128,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // restore game
         restoreGame();
 
-        // h1.textContent = '';
+        // If computer is the next player, make its move automatically
+        if (currPlayer === computerPlayer && !gameOver) {
+            setTimeout(computerPlay, 500);
+        }
 
         // reset the buttons
         newGameBtn.disabled = true;
@@ -141,11 +158,9 @@ window.addEventListener('DOMContentLoaded', () => {
         // set background image based on player
         cell.style.backgroundImage = `url(https://assets.aaonline.io/Module-DOM-API/formative-project-tic-tac-toe/player-${currPlayer.toLowerCase()}.svg)`;
 
-
-
         // check for a winner
         if (checkWin()) {
-            h1.textContent = `Winner: ${currPlayer}`;
+            h1.textContent = `Winner: You!`;
             gameOver = true;
             newGameBtn.disabled = false;
             giveUpBtn.disabled = true;
@@ -157,10 +172,61 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
             // switch players
             currPlayer = (currPlayer === 'X') ? 'O': 'X';
+
+            // If the computer's turn, make its move
+            if (currPlayer === computerPlayer && !gameOver) {
+                setTimeout(computerPlay, 500);  // Delay to make it feel like it's thinking
+            }
         }
 
         // store game state after every move
         saveGameState();
+    }
+
+    function computerPlay() {
+        if (gameOver) return;
+
+        // find the first available cell
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+
+                if (!gameBoardState[row][col]) {
+
+                    // set cell to computer player
+                    gameBoardState[row][col] = computerPlayer;
+
+                    const cell = gameBoard.querySelector(`[data-row='${row}'][data-col='${col}']`);
+
+                    // set background image based on what was stored
+                    cell.style.backgroundImage = `url(https://assets.aaonline.io/Module-DOM-API/formative-project-tic-tac-toe/player-${computerPlayer.toLowerCase()}.svg)`;
+
+
+                    // check if computer won
+                    if (checkWin()) {
+                        h1.textContent = `Winner: Computer Player!`;
+                        gameOver = true;
+                        newGameBtn.disabled = false;
+                        giveUpBtn.disabled = true;
+                    } else if (checkTie()) {
+                        h1.textContent = `Winner: None`;
+                        gameOver = true;
+                        newGameBtn.disabled = false;
+                        giveUpBtn.disabled = true;
+                    } else {
+                        // switch players
+                        currPlayer = (currPlayer === 'X') ? 'O': 'X';
+                    }
+
+                    // store game state after every move
+                    saveGameState();
+
+                    return;
+
+                }
+            }
+        }
+
+
     }
 
     // helper function to check for a win
@@ -245,7 +311,8 @@ window.addEventListener('DOMContentLoaded', () => {
             "gameBoardState": gameBoardState,
             "currentPlayer": currPlayer,
             "nextPlayer": currPlayer === 'X' ? 'O': 'X',
-            "gameOver": gameOver
+            "gameOver": gameOver,
+            "computerPlayer": computerPlayer
         };
 
         // save to local storage
