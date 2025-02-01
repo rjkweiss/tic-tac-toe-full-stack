@@ -1,70 +1,36 @@
 // Your code here
 window.addEventListener('DOMContentLoaded', () => {
 
-    // create container -- wraps around the entire elements in body
-    const container = document.createElement('div');
-    container.classList.add('container');
+    // constants
+    const PLAYER_X = 'X';
+    const PLAYER_O = 'O';
+    const NO_WINNER = 'Winner: None';
 
-    // Create a game board
-    const gameBoard = document.createElement('div');
-    gameBoard.id = 'game-board-id';
-    gameBoard.classList.add('game-board-container');
+    // create DOM elements
+    const container = createElement('div', {class: 'container'});
+    const gameBoard = createElement('div', {id: 'game-board-id', class: 'game-board-container'});
+    const gameButtons = createElement('div', {id: 'game-buttons-id', class: 'game-buttons-container'});
+    const heading = createElement('div', {id: 'heading-id', class: 'heading-container'});
+    const h1 = createElement('h1', {id: 'h1-id', class: 'winner-h1'});
 
-    // add to the body
-    container.appendChild(gameBoard);
+    // add h1 to heading container
+    heading.appendChild(h1);
 
-    // add a div with the buttons
-    const gameButtons = document.createElement('div');
-    gameButtons.id = 'game-buttons-id';
-    gameButtons.classList.add('game-buttons-container');
+    // add elements to container element
+    container.append(heading, gameBoard, gameButtons);
 
-    // add new game button
-    const newGameBtn = document.createElement('button');
-    newGameBtn.id = 'new-game-btn-id';
-    newGameBtn.classList.add('game-btn', 'new-game-btn');
-    newGameBtn.textContent = 'New Game';
-
-    // disable by default
-    newGameBtn.disabled = true;
-
-    // add to game button container
-    gameButtons.appendChild(newGameBtn);
-
-    // add give up button
-    const giveUpBtn = document.createElement('button');
-    giveUpBtn.id = 'give-up-btn-id';
-    giveUpBtn.classList.add('game-btn', 'give-up-btn');
-    giveUpBtn.textContent = 'Give Up';
-
-    // add to game button container
-    gameButtons.appendChild(giveUpBtn);
-
-    // add to body
-    container.appendChild(gameButtons);
-
-    // heading to display the winner
-    const heading = document.createElement('div');
-    heading.id = 'heading-id';
-    heading.classList.add('heading-container');
-
-    // let's add a h1 header
-    const h1 = document.createElement('h1');
-    h1.id = 'h1-id';
-    h1.classList.add('winner-h1');
-   heading.appendChild(h1);
-
-    // adding heading before the board
-    container.insertBefore(heading, gameBoard);
-
-    // add container to the body
+    // add container to body
     document.body.appendChild(container);
 
-    let currPlayer;
-    let computerPlayer;
-    let gameBoardState;
+    // add new game button & give up btn
+    const newGameBtn = createButton('New Game', {id: 'new-game-btn-id', class: ['game-btn', 'new-game-btn']}, true);
+    const giveUpBtn = createButton('Give Up', {id: 'give-up-btn-id', class: ['game-btn', 'give-up-btn']});
 
-    // track if game is over or not
-    let gameOver;
+    // add buttons to game button container
+    gameButtons.append(newGameBtn, giveUpBtn);
+
+    // define variables for current player, computer player, game board state, if game over
+    let currPlayer, computerPlayer, gameBoardState, gameOver;
 
     // initialize grid
     function initialize() {
@@ -83,59 +49,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
         } else {
 
-            // randomly assign computer player
-            // Randomly assign X or O to the computer and player
-            const isComputerX = Math.random() < 0.5;
-
-            if (isComputerX) {
-                currPlayer = 'X';  // Computer is X
-                computerPlayer = 'X';
-            } else {
-                currPlayer = 'O';  // Computer is O
-                computerPlayer = 'O';
-            }
-
-            // reset game state & player
-            gameBoardState = [[null, null, null],[null, null, null],[null, null, null]];
-
-            // currPlayer = 'X';
-
-            // resets the game
-            gameOver = false;
-
-            // remove the game winning message
-            h1.textContent = '';
+            // start / restart the game
+            startGame();
         }
 
-        // dynamically set up the board
-        for (let row = 0; row < 3; row++) {
-            for (let col = 0; col < 3; col++) {
-
-                let cell = document.createElement('div');
-                cell.classList.add('cell');
-
-                // attach to cells
-                cell.setAttribute('data-row', row);
-                cell.setAttribute('data-col', col);
-
-                // add click event here
-                cell.addEventListener('click', handleClicks);
-
-                gameBoard.appendChild(cell);
-            }
-        }
+        // set up the board
+        setUpGame();
 
         // restore game
         restoreGame();
 
-        // If computer is the next player, make its move automatically
-        if (currPlayer === computerPlayer && !gameOver) {
-            setTimeout(computerPlay, 500);
-        }
-
         // reset the buttons
-        newGameBtn.disabled = true;
-        giveUpBtn.disabled = gameOver;
+        updateButtonStates();
     }
 
     // helper function to handle clicks
@@ -156,22 +81,18 @@ window.addEventListener('DOMContentLoaded', () => {
         gameBoardState[row][col] = currPlayer;
 
         // set background image based on player
-        cell.style.backgroundImage = `url(https://assets.aaonline.io/Module-DOM-API/formative-project-tic-tac-toe/player-${currPlayer.toLowerCase()}.svg)`;
+        updateCellBackground(cell, currPlayer);
 
         // check for a winner
         if (checkWin()) {
-            h1.textContent = `Winner: You!`;
-            gameOver = true;
-            newGameBtn.disabled = false;
-            giveUpBtn.disabled = true;
+            endGame(`Winner: You!`);
+
         } else if (checkTie()) {
-            h1.textContent = `Winner: None`;
-            gameOver = true;
-            newGameBtn.disabled = false;
-            giveUpBtn.disabled = true;
+            endGame(NO_WINNER);
+
         } else {
             // switch players
-            currPlayer = (currPlayer === 'X') ? 'O': 'X';
+            switchPlayer();
 
             // If the computer's turn, make its move
             if (currPlayer === computerPlayer && !gameOver) {
@@ -198,34 +119,28 @@ window.addEventListener('DOMContentLoaded', () => {
                     const cell = gameBoard.querySelector(`[data-row='${row}'][data-col='${col}']`);
 
                     // set background image based on what was stored
-                    cell.style.backgroundImage = `url(https://assets.aaonline.io/Module-DOM-API/formative-project-tic-tac-toe/player-${computerPlayer.toLowerCase()}.svg)`;
+                    updateCellBackground(cell, computerPlayer);
 
 
                     // check if computer won
                     if (checkWin()) {
-                        h1.textContent = `Winner: Computer Player!`;
-                        gameOver = true;
-                        newGameBtn.disabled = false;
-                        giveUpBtn.disabled = true;
+                        endGame(`Winner: Computer`);
+
                     } else if (checkTie()) {
-                        h1.textContent = `Winner: None`;
-                        gameOver = true;
-                        newGameBtn.disabled = false;
-                        giveUpBtn.disabled = true;
+                        endGame(NO_WINNER);
+
                     } else {
                         // switch players
-                        currPlayer = (currPlayer === 'X') ? 'O': 'X';
+                        switchPlayer();
                     }
 
                     // store game state after every move
                     saveGameState();
 
                     return;
-
                 }
             }
         }
-
 
     }
 
@@ -267,41 +182,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // check for a tie
     function checkTie() {
-        for (let row = 0; row < 3; row++) {
-            for (let col = 0; col < 3; col++) {
-                if (!gameBoardState[row][col]) return false;
-            }
-        }
-
-        return true;
+        return gameBoardState.flat().every(cell => cell !== null);
     }
 
-    // add event listeners for the new game button
-    newGameBtn.addEventListener('click', () => {
-        // remove game state stored in local storage
-        localStorage.removeItem('ticTacToeState');
-        initialize();
-    });
+    // helper function to switch players
+    function switchPlayer() {
+        currPlayer = currPlayer === PLAYER_X ? PLAYER_O : PLAYER_X;
+    }
 
-    // enable give up button
-    giveUpBtn.addEventListener('click', () => {
-
-        // get winner
-        let winner = (currPlayer === 'X') ? 'O': 'X';
-
-        // set header
-        h1.textContent = `Winner: ${winner}`;
-
-        // reset game over boolean
+    // helper function to handle end of game
+    function endGame(message) {
+        h1.textContent = message;
         gameOver = true;
-
-        // save game state
-        saveGameState();
-
-        // disable give up btn & enable start game btn
-        giveUpBtn.disabled = true;
-        newGameBtn.disabled = false;
-    });
+        updateButtonStates();
+    }
 
     // save game after every move to local stoarage
     function saveGameState() {
@@ -310,7 +204,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const gameState = {
             "gameBoardState": gameBoardState,
             "currentPlayer": currPlayer,
-            "nextPlayer": currPlayer === 'X' ? 'O': 'X',
             "gameOver": gameOver,
             "computerPlayer": computerPlayer
         };
@@ -326,14 +219,131 @@ window.addEventListener('DOMContentLoaded', () => {
                 const cell = gameBoard.querySelector(`[data-row='${row}'][data-col='${col}']`);
 
                 if (cell && gameBoardState[row][col]) {
-                    let player = gameBoardState[row][col];
 
                     // set background image based on what was stored
-                    cell.style.backgroundImage = `url(https://assets.aaonline.io/Module-DOM-API/formative-project-tic-tac-toe/player-${player.toLowerCase()}.svg)`;
+                    updateCellBackground(cell, gameBoardState[row][col]);
                 }
             }
         }
     }
+
+    // helper function to set up game
+    // dynamically set up the board
+    function setUpGame() {
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+
+                const cell = createElement('div', {class: 'cell', 'data-row': row, 'data-col': col});
+
+                // add click event here
+                cell.addEventListener('click', handleClicks);
+                gameBoard.appendChild(cell);
+            }
+        }
+
+        // If it's the computer's turn, play automatically
+        if (currPlayer === computerPlayer && !gameOver) {
+            setTimeout(computerPlay, 500);
+        }
+    }
+
+    // update the background image
+    function updateCellBackground(cell, player) {
+        cell.style.backgroundImage = `url(https://assets.aaonline.io/Module-DOM-API/formative-project-tic-tac-toe/player-${player.toLowerCase()}.svg)`
+    }
+
+    // helper function to update buttons
+    function updateButtonStates() {
+        newGameBtn.disabled = !gameOver;
+        giveUpBtn.disabled = gameOver;
+    }
+
+    // helper function to start a new game
+    function startGame() {
+        // check if we have computer player
+        const isComputerX = Math.random() < 0.5;
+
+        // assign computer player authomatically
+        currPlayer = isComputerX ? PLAYER_X : PLAYER_O;
+        computerPlayer = currPlayer;
+
+        // set or reset the gameBoard State
+        gameBoardState = Array.from({ length: 3 }, () => Array(3).fill(null));
+
+        // reset that the game is not over
+        gameOver = false;
+
+        // reset message
+        h1.textContent = '';
+    }
+
+    // helper function to create element
+    function createElement(tag, attributes = {}) {
+
+        // create element with the given tag
+        const element = document.createElement(tag);
+
+        // process the attributes
+        processAttributes(element, attributes);
+
+        return element;
+    }
+
+    // helper function to create button
+    function createButton(text, attributes = {}, disabled=false) {
+
+        const btn = document.createElement('button');
+
+        // process any attributes of button
+        processAttributes(btn, attributes);
+
+        // set other items e,g text, disabled state
+        btn.textContent = text;
+        btn.disabled = disabled;
+
+        return btn;
+    }
+
+    // helper function to process attributes
+    function processAttributes(element, attributes = {}) {
+        // process the attributes
+        Object.entries(attributes).forEach(([key, val]) => {
+            if (key === 'class') {
+                if (Array.isArray(val)) {
+                    element.classList.add(...val);
+                } else {
+                    element.classList.add(val);
+                }
+
+            } else {
+                element.setAttribute(key, val);
+            }
+        });
+    }
+
+    // add event listeners for the new game button
+    newGameBtn.addEventListener('click', () => {
+        // remove game state stored in local storage
+        localStorage.removeItem('ticTacToeState');
+        initialize();
+    });
+
+
+    // enable give up button
+    giveUpBtn.addEventListener('click', () => {
+
+        // get winner
+        let winner = (currPlayer === PLAYER_X) ? PLAYER_O: PLAYER_X;
+
+        // reset game over boolean
+        gameOver = true;
+
+        // save game state
+        saveGameState();
+
+        // update buttons
+        endGame(`Winner: ${winner}`);
+    });
 
     initialize();
 });
